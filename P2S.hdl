@@ -3,19 +3,17 @@ CHIP P2S {
     OUT sout, complete;
 
     PARTS:
-    // 使用4个1位寄存器存储输入数据
-    Register(in=indata[0], load=load, out=bit0);
-    Register(in=indata[1], load=load, out=bit1);
-    Register(in=indata[2], load=load, out=bit2);
-    Register(in=indata[3], load=load, out=bit3);
+    // 将4位数据扩展到16位存储
+    Register(in[0..3]=indata, in[4..15]=false, load=load, out=reg_out);
 
-    // 简化计数器实现
-    Counter(increment=enable, reset=load, out[0]=count0, out[1]=count1);
+    // 2-bit计数器
+    Counter(increment=enable, reset=load, out=count[0..1]);
 
-    // 使用4路1位多路选择器
-    Mux4Way(a=bit0, b=bit1, c=bit2, d=bit3, sel[0]=count0, sel[1]=count1, out=sout);
+    // 选择输出位
+    Mux4Way(a=reg_out[0], b=reg_out[1], c=reg_out[2], d=reg_out[3], 
+            sel=count, out=sout);
 
     // 完成信号
-    And(a=count0, b=count1, out=both_high);
+    And(a=count[0], b=count[1], out=both_high);
     And(a=enable, b=both_high, out=complete);
 }
