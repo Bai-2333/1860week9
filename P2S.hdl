@@ -3,21 +3,30 @@ CHIP P2S {
     OUT sout, complete;
 
     PARTS:
-    // Store each bit in a 1-bit register
+    // 4-bit data registers to store the input when 'load' is high
     Register(in=indata[0], load=load, out=bit0);
     Register(in=indata[1], load=load, out=bit1);
     Register(in=indata[2], load=load, out=bit2);
     Register(in=indata[3], load=load, out=bit3);
 
-    // 2-bit counter
-    Counter(increment=enable, reset=load, out=count[0..1]);
+    // 2-bit counter made from two flip-flops (count0, count1)
+    // Flip bit0 every time enable is high
+    Not(in=count0, out=count0not);
+    And(a=enable, b=true, out=inc);
+    Register(in=count0not, load=inc, out=count0);
 
-    // Build a 4-way 1-bit mux manually using two Mux chips
-    Mux(a=bit0, b=bit1, sel=count[0], out=low);
-    Mux(a=bit2, b=bit3, sel=count[0], out=high);
-    Mux(a=low, b=high, sel=count[1], out=sout);
+    // Flip bit1 only when count0 is about to go from 1 -> 0 (i.e., count0not=1 and enable=1)
+    And(a=count0not, b=inc, out=inc1);
+    Not(in=count1, out=count1not);
+    Register(in=count1not, load=inc1, out=count1);
 
-    // complete = enable AND (count == 3)
-    And(a=count[0], b=count[1], out=is3); 
-    And(a=is3, b=enable, out=complete);
+    // Select the output bit according to the current counter state
+    // count = 00 -> bit0, 01 -> bit1, 10 -> bit2, 11 -> bit3
+    Mux(a=bit0, b=bit1, sel=count0, out=out01);
+    Mux(a=bit2, b=bit3, sel=count0, out=out23);
+    Mux(a=out01, b=out23, sel=count1, out=sout);
+
+    // When counter reaches 11 (count1=1 AND count0=1), and enable is high, set complete = 1
+    And(a=count0, b=count1, out=lastCount);
+    And(a=lastCount, b=enable, out=complete);
 }
