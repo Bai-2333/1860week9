@@ -1,0 +1,10 @@
+CHIP P2S {
+    IN indata[4], enable, load;
+    OUT sout, complete;
+
+    PARTS:
+    Register(in=indata, load=load, out=reg_out);
+    Count(increment=enable, reset=load, out=count_out);
+    Mux4Way16(a=reg_out[0], b=reg_out[1], c=reg_out[2],d=reg_out[3], sel=counter_out, out=sout);
+    And(a=enable, b=counter_out[3], out=complete);
+}
