@@ -5,13 +5,17 @@ CHIP P2S {
     PARTS:
     Register(in[0]=indata[0], in[1]=indata[1], 
              in[2]=indata[2], in[3]=indata[3], 
-             in[4..15]=false,  // 其他位填充0
+             in[4..15]=false, 
              load=load, out=reg_out);
 
-    // 使用寄存器输出的相应位
-    Counter(increment=enable, reset=load, out[0]=count0, out[1]=count1);
-    Mux4Way(a=reg_out[0], b=reg_out[1], c=reg_out[2], d=reg_out[3], 
-            sel[0]=count0, sel[1]=count1, out=sout);
-    And(a=count0, b=count1, out=count_is_3);
+    // 2位计数器
+    Counter(increment=enable, reset=load, out=count[0..1]);
+
+    // 位选择
+    Mux4Way(a=reg_out[0], b=reg_out[1], c=reg_out[2], d=reg_out[3],
+            sel=count, out=sout);
+
+    // 完成信号
+    And(a=count[0], b=count[1], out=count_is_3);
     And(a=enable, b=count_is_3, out=complete);
 }
