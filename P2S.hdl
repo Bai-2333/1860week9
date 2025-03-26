@@ -3,27 +3,27 @@ CHIP P2S {
     OUT sout, complete;
 
     PARTS:
-    // Store each bit of the input data into separate 1-bit registers
+    // Store each bit of the input when 'load' is high
     Register(in=indata[0], load=load, out=bit0);
     Register(in=indata[1], load=load, out=bit1);
     Register(in=indata[2], load=load, out=bit2);
     Register(in=indata[3], load=load, out=bit3);
 
-    // Bit 0 of the counter
-    Not(in=count0, out=count0not);
-    Register(in=count0not, load=enable, out=count0);
+    // First bit of the 2-bit counter
+    Not(in=counter0, out=counter0not);
+    Register(in=counter0not, load=enable, out=counter0);
 
-    // Bit 1 of the counter (increment only when count0 flips from 1 to 0)
-    And(a=count0not, b=enable, out=inc1);
-    Not(in=count1, out=count1not);
-    Register(in=count1not, load=inc1, out=count1);
+    // Second bit of the counter (toggle when counter0 changes from 1->0)
+    And(a=counter0not, b=enable, out=inc1);
+    Not(in=counter1, out=counter1not);
+    Register(in=counter1not, load=inc1, out=counter1);
 
-    // Use nested Muxes to select which bit to output based on counter
-    Mux(a=bit0, b=bit1, sel=count0, out=out01);
-    Mux(a=bit2, b=bit3, sel=count0, out=out23);
-    Mux(a=out01, b=out23, sel=count1, out=sout);
+    // Use nested Mux to select which bit to output
+    Mux(a=bit0, b=bit1, sel=counter0, out=sel01);
+    Mux(a=bit2, b=bit3, sel=counter0, out=sel23);
+    Mux(a=sel01, b=sel23, sel=counter1, out=sout);
 
     // complete = 1 only when counter == 3 and enable == 1
-    And(a=count0, b=count1, out=lastCount);
-    And(a=lastCount, b=enable, out=complete);
+    And(a=counter0, b=counter1, out=lastBit);
+    And(a=lastBit, b=enable, out=complete);
 }
