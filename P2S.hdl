@@ -3,8 +3,27 @@ CHIP P2S {
     OUT sout, complete;
 
     PARTS:
-    Register(in=indata, load=load, out=reg_out);
-    Count(increment=enable, reset=load, out=count_out);
-    Mux4Way16(a=reg_out[0], b=reg_out[1], c=reg_out[2],d=reg_out[3], sel=counter_out, out=sout);
-    And(a=enable, b=counter_out[3], out=complete);
+    // Store each input bit into a separate 1-bit register
+    Register(in=indata[0], load=load, out=bit0);
+    Register(in=indata[1], load=load, out=bit1);
+    Register(in=indata[2], load=load, out=bit2);
+    Register(in=indata[3], load=load, out=bit3);
+
+    // 2-bit counter to select which bit to output
+    Counter(increment=enable, reset=load, out=count[0..1]);
+
+    // Extend 1-bit values to 16-bit so they can be used with Mux4Way16
+    And16(a[0..15]=false, b[0..15]=true, out=one16);  // Generates 16-bit value of all 1s
+    And16(a[0..15]=bit0, b=one16, out=bit0_16);
+    And16(a[0..15]=bit1, b=one16, out=bit1_16);
+    And16(a[0..15]=bit2, b=one16, out=bit2_16);
+    And16(a[0..15]=bit3, b=one16, out=bit3_16);
+
+    // Use Mux4Way16 to select the current output bit based on counter value
+    Mux4Way16(a=bit0_16, b=bit1_16, c=bit2_16, d=bit3_16, sel=count, out=mux_out);
+    And(a=mux_out[0], b=true, out=sout);  // Only output the lowest bit
+
+    // complete = enable AND (count == 3)
+    And(a=count[0], b=count[1], out=is3); 
+    And(a=is3, b=enable, out=complete);
 }
