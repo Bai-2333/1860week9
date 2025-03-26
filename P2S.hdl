@@ -9,13 +9,13 @@ CHIP P2S {
     Register(in=indata[2], load=load, out=bit2);
     Register(in=indata[3], load=load, out=bit3);
 
-    // 2-bit计数器
-    Counter(increment=enable, reset=load, out=count[0..1]);
+    // 2位计数器(0-3)，enable时递增，load时复位
+    Counter(increment=enable, reset=load, out[0]=count0, out[1]=count1);
 
-    // 使用4路1位多路选择器
-    Mux4Way(a=bit0, b=bit1, c=bit2, d=bit3, sel=count, out=sout);
+    // 4选1多路选择器，选择当前输出的位
+    Mux4Way(a=bit0, b=bit1, c=bit2, d=bit3, sel[0]=count0, sel[1]=count1, out=sout);
 
-    // 完成信号（当count=3且enable=1时）
-    And(a=count[0], b=count[1], out=both_high);
-    And(a=enable, b=both_high, out=complete);
+    // 完成信号：当计数器=3(二进制11)且enable=1时
+    And(a=count0, b=count1, out=count_is_3);
+    And(a=enable, b=count_is_3, out=complete);
 }
