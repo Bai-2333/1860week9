@@ -10,23 +10,19 @@ CHIP P2S {
     Register(in=indata[3], load=load, out=bit3);
 
     // 2-bit counter made from two flip-flops (count0, count1)
-    // Flip bit0 every time enable is high
     Not(in=count0, out=count0not);
-    And(a=enable, b=true, out=inc);
-    Register(in=count0not, load=inc, out=count0);
+    Register(in=count0not, load=enable, out=count0);
 
-    // Flip bit1 only when count0 is about to go from 1 -> 0 (i.e., count0not=1 and enable=1)
-    And(a=count0not, b=inc, out=inc1);
+    And(a=count0not, b=enable, out=inc1);
     Not(in=count1, out=count1not);
     Register(in=count1not, load=inc1, out=count1);
 
     // Select the output bit according to the current counter state
-    // count = 00 -> bit0, 01 -> bit1, 10 -> bit2, 11 -> bit3
     Mux(a=bit0, b=bit1, sel=count0, out=out01);
     Mux(a=bit2, b=bit3, sel=count0, out=out23);
     Mux(a=out01, b=out23, sel=count1, out=sout);
 
-    // When counter reaches 11 (count1=1 AND count0=1), and enable is high, set complete = 1
+    // Output complete = 1 when count == 11 and enable == 1
     And(a=count0, b=count1, out=lastCount);
     And(a=lastCount, b=enable, out=complete);
 }
