@@ -4,24 +4,18 @@ CHIP P2S {
 
     PARTS:
     // 数据寄存器
-    Register(in=next_reg, load=reg_load, out=reg_out);
-    
-    // 控制逻辑
-    Or(a=load, b=shift, out=reg_load);
-    And(a=enable, b=not_complete, out=shift);
-    Not(in=complete, out=not_complete);
-    
-    // 移位逻辑
-    Mux16(a=indata, b={false,reg_out[0..2]}, sel=load, out=next_reg);
-    
-    // 计数器(0-3)
-    Inc16(in=count, out=inc_count);
-    Register(in=next_count, load=true, out=count);
-    Mux16(a=count, b=inc_count, sel=shift, out=next_count);
-    
-    // 完成信号
-    Equals4(a=count, b=3, out=complete);
-    
-    // 输出当前最低位
-    BitSelector(in=reg_out, bit=0, out=sout);
+    Register(in=indata, load=load, out=reg_out);
+
+    // 2-bit 计数器（0-3）
+    Register(in=next_count, load=true, out=count_out);
+    Inc16(in=count_out, out=inc_count);
+    Mux16(a=count_out, b=inc_count, sel=enable, out=next_count);
+
+    // 位选择输出
+    Mux4Way16(a=reg_out[0], b=reg_out[1], c=reg_out[2], d=reg_out[3], 
+              sel=count_out[0..1], out=sout);
+
+    // 完成信号（当 count_out=3 时）
+    Equals4(a=count_out, b=3, out=complete_temp);
+    And(a=enable, b=complete_temp, out=complete);
 }
